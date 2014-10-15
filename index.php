@@ -122,16 +122,19 @@ try {
 		if(isset($_POST["action"])) {
 			logger("Action: " . serialize(preg_replace("/[\n\r]/", "<br />", $_POST)) . " by user " . $login);
 
+			$autoresponder_start_date = array('year' => substr($_POST["autoresponder_start_date"], 0, 4), 'month' => substr($_POST["autoresponder_start_date"], 5, 2), 'day' => substr($_POST["autoresponder_start_date"], 8, 2), 'hour' => substr($_POST["autoresponder_start_date"], 11, 2), 'minute' => substr($_POST["autoresponder_start_date"], 14, 2));
+			$autoresponder_end_date = array('year' => substr($_POST["autoresponder_end_date"], 0, 4), 'month' => substr($_POST["autoresponder_end_date"], 5, 2), 'day' => substr($_POST["autoresponder_end_date"], 8, 2), 'hour' => substr($_POST["autoresponder_end_date"], 11, 2), 'minute' => substr($_POST["autoresponder_end_date"], 14, 2));
+
 			switch($_POST["action"]) {
 // TODO: ADD CONTROL, DO THING ONLY ON DOMAIN.
 				case "addAccount":
 					if(isset($_POST["autoresponder"]) && $_POST["autoresponder"] == "y") { $autoresponder = "y"; } else { $autoresponder = "n"; }
-					$client->mail_user_add($session_id, $client_id, array('server_id' => $server_id, 'email' => trim($_POST["email"]) . "@" . $domain, 'login' => trim($_POST["email"]) . "@" . $domain, 'password' => $_POST["passwordAccount"], 'name' => $_POST["name"], 'uid' => 5000, 'gid' => 5000, 'maildir' => '/var/vmail/' . $domain . '/' . $_POST["email"], 'quota' => 10000000000, 'cc' => '', 'homedir' => '/var/vmail', 'autoresponder' => $autoresponder, 'autoresponder_start_date' => $_POST["autoresponder_start_date"], 'autoresponder_end_date' => $_POST["autoresponder_end_date"], 'autoresponder_subject' => $_POST["autoresponder_subject"], 'autoresponder_text' => $_POST["autoresponder_text"], 'move_junk' => 'y', 'custom_mailfilter' => '', 'postfix' => 'y', 'access' => 'n', 'disableimap' => 'n', 'disablepop3' => 'n', 'disabledeliver' => 'n', 'disablesmtp' => 'n'));
+					$client->mail_user_add($session_id, $client_id, array('server_id' => $server_id, 'email' => trim($_POST["email"]) . "@" . $domain, 'login' => trim($_POST["email"]) . "@" . $domain, 'password' => $_POST["passwordAccount"], 'name' => $_POST["name"], 'uid' => 5000, 'gid' => 5000, 'maildir' => '/var/vmail/' . $domain . '/' . $_POST["email"], 'quota' => 10000000000, 'cc' => '', 'homedir' => '/var/vmail', 'autoresponder' => $autoresponder, 'autoresponder_start_date' => $autoresponder_start_date, 'autoresponder_end_date' => $autoresponder_end_date, 'autoresponder_subject' => $_POST["autoresponder_subject"], 'autoresponder_text' => $_POST["autoresponder_text"], 'move_junk' => 'y', 'custom_mailfilter' => '', 'postfix' => 'y', 'access' => 'n', 'disableimap' => 'n', 'disablepop3' => 'n', 'disabledeliver' => 'n', 'disablesmtp' => 'n'));
 					break;
 				
 				case "updateAccount":
 					if(isset($_POST["autoresponder"]) && $_POST["autoresponder"] == "y") { $autoresponder = "y"; } else { $autoresponder = "n"; }
-					$params = array('server_id' => $server_id, 'email' => trim($_POST["email"]) . "@" . $domain, 'login' => trim($_POST["email"]) . "@" . $domain, 'name' => $_POST["name"], 'uid' => 5000, 'gid' => 5000, 'maildir' => '/var/vmail/' . $domain . '/' . $_POST["email"], 'quota' => 10000000000, 'cc' => '', 'homedir' => '/var/vmail', 'autoresponder' => $autoresponder, 'autoresponder_start_date' => $_POST["autoresponder_start_date"], 'autoresponder_end_date' => $_POST["autoresponder_end_date"], 'autoresponder_subject' => $_POST["autoresponder_subject"], 'autoresponder_text' => $_POST["autoresponder_text"], 'move_junk' => 'y', 'custom_mailfilter' => '', 'postfix' => 'y', 'access' => 'n', 'disableimap' => 'n', 'disablepop3' => 'n', 'disabledeliver' => 'n', 'disablesmtp' => 'n');
+					$params = array('server_id' => $server_id, 'email' => trim($_POST["email"]) . "@" . $domain, 'login' => trim($_POST["email"]) . "@" . $domain, 'name' => $_POST["name"], 'uid' => 5000, 'gid' => 5000, 'maildir' => '/var/vmail/' . $domain . '/' . $_POST["email"], 'quota' => 10000000000, 'cc' => '', 'homedir' => '/var/vmail', 'autoresponder' => $autoresponder, 'autoresponder_start_date' => $autoresponder_start_date, 'autoresponder_end_date' => $autoresponder_end_date, 'autoresponder_subject' => $_POST["autoresponder_subject"], 'autoresponder_text' => $_POST["autoresponder_text"], 'move_junk' => 'y', 'custom_mailfilter' => '', 'postfix' => 'y', 'access' => 'n', 'disableimap' => 'n', 'disablepop3' => 'n', 'disabledeliver' => 'n', 'disablesmtp' => 'n');
 					if(isset($_POST["passwordAccount"]) && $_POST["passwordAccount"] != "") { $params["password"] = $_POST["passwordAccount"]; }
 					$client->mail_user_update($session_id, $client_id, $_POST["id"], $params);
 					break;
@@ -190,7 +193,6 @@ try {
 	Nom et Pr&eacute;nom du compte / Mot de passe<br />
 	<input type="text" name="name" value="Nom Pr&eacute;nom" size="25"> <input type="password" name="passwordAccount" value="password"> <input type="checkbox" name="autoresponder" onclick="javascript:toggleDiv('mydiv0');" value="y"> R&eacute;ponse automatique (absence de bureau)<br />
 <?php
-// TODO: Fix date, don't work ->
 // TODO: add password 5char min
 ?>		
 		<div id="mydiv0" style="display:none">
@@ -206,14 +208,13 @@ if(empty($email_full)) {
 Aucun
 <?php
 } else {
-        foreach($email_full as $value) {
+	foreach($email_full as $value) {
 		$i = rand();
 		$k = rand();
 
 		$accountEmailAndDomain = explode('@', $value["email"]);
 		$accountEmail = $accountEmailAndDomain[0];
 		$accountDomain = $accountEmailAndDomain[1];
-// TODO: Fix date, don't work ->
 // TODO: alert when delete
 // TODO: add password 5char min
 ?>
@@ -236,7 +237,7 @@ Aucun
 	</div>
 </span><br />
 <?php
-        }
+	}
 }
 ?>
 <h2>Email collecteur:</h2>
