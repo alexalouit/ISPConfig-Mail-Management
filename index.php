@@ -1,4 +1,6 @@
 <?php
+// Simple Mail Management for ISPConfig
+// Alexandre Alouit <alexandre.alouit@gmail.com>
 define("SALT", ""); // Random string must be unique (eg s7fd8CB5s2qq6)
 define("IMAP", "localhost"); // IMAP Server IP
 define("ADMIN_EMAIL", "admin@domain.tld"); // Email administrator for API errors
