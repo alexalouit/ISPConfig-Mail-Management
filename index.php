@@ -1,10 +1,14 @@
 <?php
-define("SALT", "");
-define("IMAP", "localhost");
-define("ADMIN_EMAIL", "admin@domain.tld");
-define("LOGFILE", dirname( __FILE__) . DIRECTORY_SEPARATOR . "log.log");
-define("SOAP_LOCATION", "https://remote/index.php");
-define("SOAP_URI", "https://remote/");
+define("SALT", ""); // Random string must be unique (eg s7fd8CB5s2qq6)
+define("IMAP", "localhost"); // IMAP Server IP
+define("ADMIN_EMAIL", "admin@domain.tld"); // Email administrator for API errors
+define("LOGFILE", dirname( __FILE__) . DIRECTORY_SEPARATOR . "log.log"); // LOGFILE (required write permission by current web user)
+define("SOAP_LOCATION", "https://remote/index.php"); // ISPConfig API URL
+define("SOAP_URI", "https://remote/"); // ISPConfig API URI
+define("API_LOGIN", ""); // ISPConfig API Login
+define("API_PASSWORD", ""); // ISPConfig API Password
+define("LOGGER", TRUE); // Enable logger (TRUE/FALSE)
+define("AWAYMSG", ""); // Away default message (Use &#13; for newline)
 ?>
 <html lang="fr">
 <head>
@@ -39,7 +43,11 @@ document.getElementById(divid).style.display = 'none';
 <body>
 <?php
 if(!isset($_SESSION)) { session_start(); }
-if(isset($_GET["logout"]) && $_GET["logout"] == "TRUE") { unset($_SESSION["password"]); unset($_SESSION["login"]); }
+if(isset($_GET["logout"]) && $_GET["logout"] == "TRUE") { 
+	unset($_SESSION["password"]);
+	logger("Successful logout for user " . $_SESSION["login"]);
+	unset($_SESSION["login"]);
+}
 
 function login_form() {
 ?>
@@ -53,18 +61,20 @@ function login_form() {
 }
 
 function logger($message) {
-	$content = $message . " from " . $_SERVER['REMOTE_ADDR'] . " at " . date("Y-m-d H:i:s") . "\n";
-	if (is_writable(LOGFILE)) {
-		if (!$handle = fopen(LOGFILE, 'a')) {
-			mail(ADMIN_EMAIL, 'ERROR: Mail management', "Impossible d'ouvrir le fichier de log");
-		}
-		if (fwrite($handle, $content) === FALSE) {
-			mail(ADMIN_EMAIL, 'ERROR: Mail management', "Impossible d'ecrire dans le fichier de log");
-		}
+	if(LOGGER){
+		$content = $message . " from " . $_SERVER['REMOTE_ADDR'] . " at " . date("Y-m-d H:i:s") . "\n";
+		if (is_writable(LOGFILE)) {
+			if (!$handle = fopen(LOGFILE, 'a')) {
+				mail(ADMIN_EMAIL, 'ERROR: Mail management', "Impossible d'ouvrir le fichier de log");
+			}
+			if (fwrite($handle, $content) === FALSE) {
+				mail(ADMIN_EMAIL, 'ERROR: Mail management', "Impossible d'ecrire dans le fichier de log");
+			}
 
-		fclose($handle);
-	} else {
-		mail(ADMIN_EMAIL, 'ERROR: Mail management', "Le fichier de log n'est pas accessible en ecriture.");
+			fclose($handle);
+		} else {
+			mail(ADMIN_EMAIL, 'ERROR: Mail management', "Le fichier de log n'est pas accessible en ecriture.");
+		}
 	}
 }
 
@@ -100,9 +110,9 @@ $domain = $emailAndDomain[1];
 <br/>
 
 <?php
-$client = new SoapClient(null, array('location' => SOAP_LOCATION, 'uri' => SOAP_URI));
+$client = new SoapClient(null, array('location' => API_LOCATION, 'uri' => API_URI));
 try {
-	if($session_id = $client->login("", "")) {
+	if($session_id = $client->login(API_LOGIN, API_PASSWORD)) {
 
 		$domain_id = $client->mail_domain_get_by_domain($session_id,$domain);
 		if(empty($domain_id)) {
@@ -120,7 +130,9 @@ try {
 // TODO: WHEN ACTION, SAY IS IN TEMPSTACK
 
 		if(isset($_POST["action"])) {
-			logger("Action: " . serialize(preg_replace("/[\n\r]/", "<br />", $_POST)) . " by user " . $login);
+			$logger = $_POST;
+			unset($logger["passwordAccount"]);
+			logger("Action: " . serialize(preg_replace("/[\n\r]/", "<br />", $logger)) . " by user " . $login);
 
 			$autoresponder_start_date = array('year' => substr($_POST["autoresponder_start_date"], 0, 4), 'month' => substr($_POST["autoresponder_start_date"], 5, 2), 'day' => substr($_POST["autoresponder_start_date"], 8, 2), 'hour' => substr($_POST["autoresponder_start_date"], 11, 2), 'minute' => substr($_POST["autoresponder_start_date"], 14, 2));
 			$autoresponder_end_date = array('year' => substr($_POST["autoresponder_end_date"], 0, 4), 'month' => substr($_POST["autoresponder_end_date"], 5, 2), 'day' => substr($_POST["autoresponder_end_date"], 8, 2), 'hour' => substr($_POST["autoresponder_end_date"], 11, 2), 'minute' => substr($_POST["autoresponder_end_date"], 14, 2));
@@ -185,20 +197,25 @@ try {
 }
 // TODO: show quota
 // TODO: show docuementation for each section
+$i = 0;
+$j = 2000;
+$k = 4000;
+$l = 6000;
+$m = 8000;
+$n = 10000;
 ?>
 <h2>Comptes email:</h2>
 <form action="?" method="post">
 	<input type="hidden" name="action" value="addAccount">
 	<input type="text" name="email" value="adresse" size="25">@<?php echo $domain; ?> <br />
 	Nom et Pr&eacute;nom du compte / Mot de passe<br />
-	<input type="text" name="name" value="Nom Pr&eacute;nom" size="25"> <input type="password" name="passwordAccount" value="password"> <input type="checkbox" name="autoresponder" onclick="javascript:toggleDiv('mydiv0');" value="y"> R&eacute;ponse automatique (absence de bureau)<br />
-<?php
-// TODO: add password 5char min
-?>		
-		<div id="mydiv0" style="display:none">
+	<input type="text" name="name" value="Nom Pr&eacute;nom" size="25"> 
+	<input type="password" name="passwordAccount" value="" pattern="{5,15}" required> 
+	<input type="checkbox" name="autoresponder" onclick="javascript:toggleDiv('mydiv<?php echo $i; ?>');" value="y"> R&eacute;ponse automatique (absence de bureau)<br />
+		<div id="mydiv<?php echo $i; ?>" style="display:none">
 		Du <input type="text" name="autoresponder_start_date" value="<?php echo date("Y-m-d H:i"); ?>" size="21"> au <input type="text" name="autoresponder_end_date" value="<?php echo date("Y-m-d H:i", strtotime("+1 week")); ?>" size="21"><br />
 		<input type="text" name="autoresponder_subject" value="Absence de bureau" size="32"><br />
-		<textarea name="autoresponder_text" rows="7" cols="60">Bonjour, &#13;Je suis absent(e) du XXXX au XXXXX.&#13;En cas d'urgence, veuillez contacter XXXXXXX par t&eacute;l&eacute;phone au XX.XX.XX.XX.XX ou par email &agrave; l'adresse XXXXXX@<?php echo $domain; ?>.&#13;&#13;Cordialement,&#13;XXXXXX</textarea><br />
+		<textarea name="autoresponder_text" rows="7" cols="60"><?php echo AWAYMSG; ?></textarea><br />
 	</div>
 	<input type="submit" name="submit" value="ajouter">
 </form>
@@ -209,9 +226,9 @@ Aucun
 <?php
 } else {
 	foreach($email_full as $value) {
-		$i = rand();
-		$k = rand();
-
+		$i++;
+		$j++;
+		$k++;
 		$accountEmailAndDomain = explode('@', $value["email"]);
 		$accountEmail = $accountEmailAndDomain[0];
 		$accountDomain = $accountEmailAndDomain[1];
@@ -220,14 +237,27 @@ Aucun
 ?>
 <span class="sameLine">
 	<?php echo $value["email"]; ?> (<?php echo $value["name"]; ?>) 
-	<form action="?" method="post"><input type="hidden" name="action" value="deleteAccount"><input type="hidden" name="id" value="<?php echo $value["mailuser_id"]; ?>"><input type="submit" value="supprimer"></form>
+	<form action="?" method="post"><input type="hidden" name="action" value="deleteAccount">
+		<input type="hidden" name="id" value="<?php echo $value["mailuser_id"]; ?>">
+<?php
+if($value["email"] != $login) {
+?>
+		<input type="button" value="supprimer" onclick="javascript:;" onmousedown="toggleDiv('mydiv<?php echo $k; ?>');">
+		<div id="mydiv<?php echo $k; ?>" style="display:none">
+			Etes-vous sûr de vouloir supprimer <b><?php echo $value["email"]; ?></b>? <input type="submit" value="supprimer">
+		</div>
+<?php
+}
+?>
+	</form>
 	<input type="button" value="editer" onclick="javascript:;" onmousedown="toggleDiv('mydiv<?php echo $i; ?>');">
 	<div id="mydiv<?php echo $i; ?>" style="display:none">
 		<form action="?" method="post"><input type="hidden" name="action" value="updateAccount"><input type="hidden" name="id" value="<?php echo $value["mailuser_id"]; ?>">
 			<input type="text" name="email" value="<?php echo $accountEmail; ?>" size="25">@<?php echo $domain; ?> <br />
 				Nom et Pr&eacute;nom du compte / Mot de passe <small>(laisser vide = actuel)</small><br />
-				<input type="text" name="name" value="<?php echo $value["name"]; ?>" size="25"> <input type="password" name="passwordAccount" value=""> <input type="checkbox" name="autoresponder" onclick="javascript:toggleDiv('mydiv<?php echo $k; ?>');" value="y" <?php if(isset($value["autoresponder"]) && $value["autoresponder"] == "y") { echo "checked"; } ?>> R&eacute;ponse automatique (absence de bureau)<br />
-			<div id="mydiv<?php echo $k; ?>" <?php if(!isset($value["autoresponder"]) OR $value["autoresponder"] != "y") { echo "style=\"display:none\""; } ?>>
+				<input type="text" name="name" value="<?php echo $value["name"]; ?>" size="25"> 
+				<input type="password" name="passwordAccount" value="" pattern="{5,15}" > <input type="checkbox" name="autoresponder" onclick="javascript:toggleDiv('mydiv<?php echo $j; ?>');" value="y" <?php if(isset($value["autoresponder"]) && $value["autoresponder"] == "y") { echo "checked"; } ?>> R&eacute;ponse automatique (absence de bureau)<br />
+			<div id="mydiv<?php echo $j; ?>" <?php if(!isset($value["autoresponder"]) OR $value["autoresponder"] != "y") { echo "style=\"display:none\""; } ?>>
 				Du <input type="text" name="autoresponder_start_date" value="<?php echo $value["autoresponder_start_date"]; ?>" size="21"> au <input type="text" name="autoresponder_end_date" value="<?php echo $value["autoresponder_end_date"]; ?>" size="21"><br />
 				<input type="text" name="autoresponder_subject" value="<?php echo $value["autoresponder_subject"]; ?>" size="32"><br />
 				<textarea name="autoresponder_text" rows="7" cols="60"><?php echo $value["autoresponder_text"]; ?></textarea><br />
@@ -251,16 +281,27 @@ Aucun
 </form>
 <?php
 } else {
-        foreach($catchall as $value) {
-		$i++;
+	foreach($catchall as $value) {
+	$l++;
 ?>
 <span class="sameLine">
-	<form action="?" method="post"><input type="hidden" name="action" value="updateCatchall"><input type="hidden" name="id" value="<?php echo $value["forwarding_id"]; ?>"><input type="text" name="destination" value="<?php echo $value["destination"]; ?>" size="32"><input type="submit" value="modifier"></form>
-	<form action="?" method="post"><input type="hidden" name="action" value="deleteCatchall"><input type="hidden" name="id" value="<?php echo $value["forwarding_id"]; ?>"><input type="submit" value="supprimer"></small></form>
+	<form action="?" method="post"><input type="hidden" name="action" value="updateCatchall">
+		<input type="hidden" name="id" value="<?php echo $value["forwarding_id"]; ?>">
+		<input type="text" name="destination" value="<?php echo $value["destination"]; ?>" size="32">
+		<input type="submit" value="modifier">
+	</form>
+	<form action="?" method="post">
+		<input type="hidden" name="action" value="deleteCatchall">
+		<input type="hidden" name="id" value="<?php echo $value["forwarding_id"]; ?>">
+		<input type="button" value="supprimer" onclick="javascript:;" onmousedown="toggleDiv('mydiv<?php echo $l; ?>');">
+		<div id="mydiv<?php echo $l; ?>" style="display:none">
+			Etes-vous sûr de vouloir supprimer la redirection collecteur vers <b><?php echo $value["destination"]; ?></b>? <input type="submit" value="supprimer">
+		</div>
+	</form>
 </span>
 
 <?php
-        }
+	}
 }
 ?>
 <h2>Alias d'email:</h2>
@@ -278,6 +319,8 @@ Aucun
 <?php
 } else {
 	foreach($forward_full as $value) {
+	$m++;
+	$n++;
 		$i= rand();
 		$sourceEmailAndDomain = explode('@', $value["source"]);
 		$sourceEmail = $sourceEmailAndDomain[0];
@@ -285,12 +328,23 @@ Aucun
 ?>
 <span class="sameLine">
 	<?php echo $value["source"]; ?> -> <?php echo $value["destination"]; ?> 
-	<form action="?" method="post"><input type="hidden" name="action" value="deleteAlias"><input type="hidden" name="id" value="<?php echo $value["forwarding_id"]; ?>"><input type="submit" value="supprimer"></small></form> 
-	<input type="button" value="editer" onclick="javascript:;" onmousedown="toggleDiv('mydiv<?php echo $i; ?>');">
-	<div id="mydiv<?php echo $i; ?>" style="display:none">
-		<form action="?" method="post"><input type="hidden" name="action" value="updateAlias"><input type="hidden" name="id" value="<?php echo $value["forwarding_id"]; ?>">
-		<input type="text" name="source" value="<?php echo $sourceEmail; ?>" size="25">@<?php echo $sourceDomain; ?> -> <br />
-		<textarea name="destination" rows="5" cols="35"><?php echo $value["destination"]; ?> </textarea> <br /><input type="submit" value="modifier"></small></form>
+	<form action="?" method="post">
+		<input type="hidden" name="action" value="deleteAlias">
+		<input type="hidden" name="id" value="<?php echo $value["forwarding_id"]; ?>">
+		<input type="button" value="supprimer" onclick="javascript:;" onmousedown="toggleDiv('mydiv<?php echo $m; ?>');">
+		<div id="mydiv<?php echo $m; ?>" style="display:none">
+			Etes-vous sûr de vouloir supprimer <b><?php echo $value["source"]; ?></b>? <input type="submit" value="supprimer">
+		</div>
+	</form> 
+	<input type="button" value="editer" onclick="javascript:;" onmousedown="toggleDiv('mydiv<?php echo $n; ?>');">
+	<div id="mydiv<?php echo $n; ?>" style="display:none">
+		<form action="?" method="post">
+			<input type="hidden" name="action" value="updateAlias">
+			<input type="hidden" name="id" value="<?php echo $value["forwarding_id"]; ?>">
+			<input type="text" name="source" value="<?php echo $sourceEmail; ?>" size="25">@<?php echo $sourceDomain; ?> -> <br />
+			<textarea name="destination" rows="5" cols="35"><?php echo $value["destination"]; ?> </textarea> <br />
+			<input type="submit" value="modifier">
+		</form>
 	</div>
 </span><br />
 <?php
