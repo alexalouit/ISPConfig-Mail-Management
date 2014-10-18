@@ -1,6 +1,7 @@
 <?php
 // Simple Mail Management for ISPConfig
 // Alexandre Alouit <alexandre.alouit@gmail.com>
+// Version: 1.3
 define("SALT", ""); // Random string must be unique (eg s7fd8CB5s2qq6)
 define("IMAP", "localhost"); // IMAP Server IP
 define("ADMIN_EMAIL", "admin@domain.tld"); // Email administrator for API errors
@@ -32,14 +33,13 @@ define("AWAYMSG", ""); // Away default message (Use &#13; for newline)
 			});
 		});
 
-function toggleDiv(divid){
-if(document.getElementById(divid).style.display == 'none'){
-document.getElementById(divid).style.display = 'block';
-}else{
-document.getElementById(divid).style.display = 'none';
-}
-}
-
+		function toggleDiv(divid){
+			if(document.getElementById(divid).style.display == 'none'){
+				document.getElementById(divid).style.display = 'block';
+			}else{
+				document.getElementById(divid).style.display = 'none';
+			}
+		}
 	</script>
 </head>
 <body>
@@ -49,6 +49,7 @@ if(isset($_GET["logout"]) && $_GET["logout"] == "TRUE") {
 	unset($_SESSION["password"]);
 	logger("Successful logout for user " . $_SESSION["login"]);
 	unset($_SESSION["login"]);
+	header("Location: " . $_SERVER["SCRIPT_NAME"]);
 }
 
 function login_form() {
@@ -99,7 +100,10 @@ if(!$imap) {
 	echo login_form();
 	exit;
 } else {
-	if(isset($_POST["login"])) { logger("Successful login for user " . $login); }
+	if(isset($_POST["login"])) {
+		logger("Successful login for user " . $login);
+		header("Location: " . $_SERVER["SCRIPT_NAME"]);
+	}
 }
 
 imap_close($imap);
@@ -183,6 +187,7 @@ try {
 					break;
 					
 			}
+			header("Location: " . $_SERVER["SCRIPT_NAME"]);
 		}
 
 		$email_full = $client->mail_user_get($session_id, array('sys_groupid' => $domain_full["sys_groupid"]));
