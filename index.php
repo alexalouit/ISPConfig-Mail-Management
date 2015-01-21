@@ -129,7 +129,7 @@ try {
 
 		$domain_full = $client->mail_domain_get($session_id, $domain_id[0]["domain_id"]);
 
-		$client_id = $client->client_get_id($session_id, $domain_full["sys_groupid"]);
+		$client_id = $client->client_get_id($session_id, $domain_full["sys_userid"]);
 		$server_id = $domain_full["server_id"];
 
 // TODO: ADD POPUP FOR SAFETY & PREVENT!
